@@ -1,0 +1,735 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0"/>
+<meta name="apple-mobile-web-app-capable" content="yes"/>
+<meta name="mobile-web-app-capable" content="yes"/>
+<title>Mesada Game</title>
+<link href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;600;700;800;900&display=swap" rel="stylesheet"/>
+<style>
+*{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent;}
+body{font-family:'Nunito','Segoe UI',sans-serif;background:#F8F7FF;min-height:100vh;padding-bottom:90px;}
+button{font-family:'Nunito','Segoe UI',sans-serif;cursor:pointer;}
+input,select{font-family:'Nunito','Segoe UI',sans-serif;}
+.hidden{display:none!important;}
+@keyframes cffall{0%{transform:translateY(-10px) rotate(0deg);opacity:1}100%{transform:translateY(230px) rotate(420deg);opacity:0}}
+@keyframes spin{to{transform:rotate(360deg)}}
+@keyframes shake{0%,100%{transform:translateX(0)}25%{transform:translateX(-6px)}75%{transform:translateX(6px)}}
+</style>
+</head>
+<body>
+
+<!-- LOADING -->
+<div id="loading" style="min-height:100vh;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:16px;">
+  <div style="width:48px;height:48px;border:5px solid #E5E7EB;border-top:5px solid #6C63FF;border-radius:50%;animation:spin 0.8s linear infinite;"></div>
+  <div style="color:#6B7280;font-size:15px;font-weight:600;">Conectando...</div>
+</div>
+
+<!-- APP -->
+<div id="app" class="hidden">
+
+  <!-- CONFETTI -->
+  <div id="confetti" class="hidden" style="position:fixed;inset:0;pointer-events:none;z-index:9999;"></div>
+
+  <!-- PIN OVERLAY -->
+  <div id="pinOverlay" class="hidden" style="position:fixed;inset:0;background:rgba(8,6,26,0.92);display:flex;align-items:center;justify-content:center;z-index:2000;backdrop-filter:blur(8px);">
+    <div style="background:#1A1830;border-radius:28px;padding:32px 28px;width:300px;text-align:center;box-shadow:0 24px 60px rgba(0,0,0,0.6);">
+      <div style="font-size:38px;margin-bottom:6px;">🔐</div>
+      <div style="color:#fff;font-weight:900;font-size:18px;margin-bottom:3px;">Área dos Pais</div>
+      <div style="color:#9CA3AF;font-size:13px;margin-bottom:24px;">Digite o PIN para continuar</div>
+      <div id="pinDots" style="display:flex;justify-content:center;gap:14px;margin-bottom:28px;">
+        <div class="dot" style="width:16px;height:16px;border-radius:50%;background:#374151;transition:all 0.15s;"></div>
+        <div class="dot" style="width:16px;height:16px;border-radius:50%;background:#374151;transition:all 0.15s;"></div>
+        <div class="dot" style="width:16px;height:16px;border-radius:50%;background:#374151;transition:all 0.15s;"></div>
+        <div class="dot" style="width:16px;height:16px;border-radius:50%;background:#374151;transition:all 0.15s;"></div>
+      </div>
+      <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-bottom:8px;">
+        <button onclick="pinPress('1')" class="pinBtn">1</button>
+        <button onclick="pinPress('2')" class="pinBtn">2</button>
+        <button onclick="pinPress('3')" class="pinBtn">3</button>
+        <button onclick="pinPress('4')" class="pinBtn">4</button>
+        <button onclick="pinPress('5')" class="pinBtn">5</button>
+        <button onclick="pinPress('6')" class="pinBtn">6</button>
+        <button onclick="pinPress('7')" class="pinBtn">7</button>
+        <button onclick="pinPress('8')" class="pinBtn">8</button>
+        <button onclick="pinPress('9')" class="pinBtn">9</button>
+        <div></div>
+        <button onclick="pinPress('0')" class="pinBtn">0</button>
+        <button onclick="pinDel()" class="pinBtn" style="color:#9CA3AF;">⌫</button>
+      </div>
+      <button onclick="fecharPin()" style="margin-top:8px;background:none;border:none;color:#6B7280;font-size:13px;">Cancelar</button>
+    </div>
+  </div>
+
+  <style>
+  .pinBtn{padding:16px 0;border-radius:14px;border:none;background:#2D2B50;color:#fff;font-size:20px;font-weight:800;}
+  </style>
+
+  <!-- HEADER -->
+  <div id="header" style="padding:22px 20px 18px;color:#fff;">
+    <div style="max-width:480px;margin:0 auto;">
+      <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:12px;">
+        <div>
+          <div id="headerLabel" style="font-size:11px;opacity:0.75;letter-spacing:2px;text-transform:uppercase;">🏆 Mesada Game</div>
+          <div id="headerTitle" style="font-size:21px;font-weight:900;">Missões da Semana</div>
+          <div style="font-size:12px;opacity:0.75;margin-top:2px;display:flex;align-items:center;gap:6px;">
+            <span id="headerDatas"></span>
+            <span id="headerDias" style="background:rgba(255,255,255,0.2);border-radius:8px;padding:1px 7px;font-size:11px;"></span>
+          </div>
+        </div>
+        <button id="btnPais" onclick="abrirPin()" style="background:rgba(255,255,255,0.15);border:1.5px solid rgba(255,255,255,0.3);border-radius:12px;padding:8px 14px;color:#fff;font-weight:700;font-size:12px;margin-top:4px;position:relative;">
+          👨‍👩‍👧 Pais
+          <span id="badgePend" class="hidden" style="position:absolute;top:-7px;right:-7px;background:#EF4444;color:#fff;border-radius:50%;width:18px;height:18px;font-size:10px;font-weight:900;display:flex;align-items:center;justify-content:center;"></span>
+        </button>
+        <button id="btnSair" onclick="sairAdmin()" class="hidden" style="background:rgba(255,255,255,0.15);border:1.5px solid rgba(255,255,255,0.3);border-radius:12px;padding:8px 16px;color:#fff;font-weight:700;font-size:12px;margin-top:4px;">← Sair</button>
+      </div>
+      <div id="scoreboard" style="display:flex;gap:10px;"></div>
+    </div>
+  </div>
+
+  <!-- NAV -->
+  <div id="nav" style="background:#fff;border-bottom:1px solid #E5E7EB;position:sticky;top:0;z-index:10;">
+    <div style="max-width:480px;margin:0 auto;display:flex;">
+      <button onclick="setAba('tarefas')" id="tab-tarefas" class="tab">✅ Hoje</button>
+      <button onclick="setAba('historico')" id="tab-historico" class="tab">📅 Histórico</button>
+      <button onclick="setAba('placar')" id="tab-placar" class="tab">🏆 Placar</button>
+    </div>
+  </div>
+  <div id="navAdmin" class="hidden" style="background:#1E1B4B;border-bottom:1px solid #312E81;position:sticky;top:0;z-index:10;">
+    <div style="max-width:480px;margin:0 auto;display:flex;">
+      <button onclick="setAbaAdmin('auditoria')" id="atab-auditoria" class="atab">🔍 Auditoria <span id="badgeAud" class="hidden" style="background:#EF4444;color:#fff;border-radius:8px;padding:1px 5px;font-size:10px;font-weight:900;margin-left:3px;"></span></button>
+      <button onclick="setAbaAdmin('placar')" id="atab-placar" class="atab">🏆 Placar</button>
+      <button onclick="setAbaAdmin('config')" id="atab-config" class="atab">⚙️ Config</button>
+    </div>
+  </div>
+
+  <style>
+  .tab{flex:1;padding:13px 4px;background:none;border:none;border-bottom:3px solid transparent;color:#9CA3AF;font-weight:600;font-size:12px;transition:all 0.15s;}
+  .tab.ativo{color:#6C63FF;border-bottom:3px solid #6C63FF;font-weight:800;}
+  .atab{flex:1;padding:13px 4px;background:none;border:none;border-bottom:3px solid transparent;color:#6B7280;font-weight:600;font-size:12px;transition:all 0.15s;}
+  .atab.ativo{color:#818CF8;border-bottom:3px solid #818CF8;font-weight:800;}
+  </style>
+
+  <!-- CONTEÚDO -->
+  <div style="max-width:480px;margin:0 auto;padding:18px 16px;">
+    <div id="pane-tarefas"></div>
+    <div id="pane-historico" class="hidden"></div>
+    <div id="pane-placar" class="hidden"></div>
+    <div id="pane-auditoria" class="hidden"></div>
+    <div id="pane-aplacar" class="hidden"></div>
+    <div id="pane-config" class="hidden"></div>
+  </div>
+</div>
+
+<script type="module">
+import { initializeApp }    from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
+import { getFirestore, doc, onSnapshot, setDoc, getDoc } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
+
+// ── Firebase ──────────────────────────────────────────────────────────────────
+const firebaseConfig = {
+  apiKey:            "AIzaSyAopjgJHKsIGA7ds8YmL2CB1VV7u3zFYEs",
+  authDomain:        "mesada-kids-f3c6f.firebaseapp.com",
+  projectId:         "mesada-kids-f3c6f",
+  storageBucket:     "mesada-kids-f3c6f.firebasestorage.app",
+  messagingSenderId: "822402484433",
+  appId:             "1:822402484433:web:c554f2204a7fa33bb69df0"
+};
+const app = initializeApp(firebaseConfig);
+const db  = getFirestore(app);
+
+async function fbGet(id)       { const s=await getDoc(doc(db,"mesada",id)); return s.exists()?s.data():null; }
+async function fbSet(id, data) { await setDoc(doc(db,"mesada",id), data, {merge:true}); }
+function fbListen(id, cb)      { return onSnapshot(doc(db,"mesada",id), s=>{ if(s.exists()) cb(s.data()); }); }
+
+// ── Constantes ────────────────────────────────────────────────────────────────
+const TETO_MAX=15, VP0=0.5, DS=7;
+const FILHOS=[
+  {id:"pedro",nome:"Pedro",     idade:13,avatar:"🧒",cor:"#6C63FF",grad:"linear-gradient(135deg,#6C63FF,#3B82F6)"},
+  {id:"maria",nome:"Maria Flor",idade:7, avatar:"👧",cor:"#F472B6",grad:"linear-gradient(135deg,#F472B6,#FB7185)"},
+];
+const CAT_COR={casa:"#10B981",quarto:"#6C63FF",estudo:"#F59E0B"};
+const CAT_NOM={casa:"Casa",quarto:"Quarto",estudo:"Estudo"};
+const DL=["Dom","Seg","Ter","Qua","Qui","Sex","Sáb"];
+const TRAW=[
+  {id:1, emoji:"🍽️",nome:"Lavou a louça",              cat:"casa",   filhos:["pedro","maria"]},
+  {id:2, emoji:"🧹",nome:"Varreu a casa",               cat:"casa",   filhos:["pedro","maria"]},
+  {id:3, emoji:"🛏️",nome:"Arrumou o quarto",            cat:"quarto", filhos:["pedro","maria"]},
+  {id:4, emoji:"👕",nome:"Dobrou roupas",               cat:"casa",   filhos:["pedro","maria"]},
+  {id:5, emoji:"📚",nome:"Leu um livro e resumiu",      cat:"estudo", filhos:["pedro","maria"]},
+  {id:6, emoji:"🎒",nome:"Organizou a mochila",         cat:"quarto", filhos:["pedro","maria"]},
+  {id:7, emoji:"🐶",nome:"Cuidou do pet",               cat:"casa",   filhos:["pedro","maria"]},
+  {id:8, emoji:"🧺",nome:"Separou o lixo reciclável",   cat:"casa",   filhos:["pedro","maria"]},
+  {id:9, emoji:"✏️",nome:"Fez a lição sem pedir ajuda", cat:"estudo", filhos:["pedro","maria"]},
+  {id:10,emoji:"🌿",nome:"Regou as plantas",            cat:"casa",   filhos:["pedro","maria"]},
+];
+
+// ── Estado global ─────────────────────────────────────────────────────────────
+let semana={chave:chaveSemana(),pedro:{},maria:{}};
+let cfg={valorPonto:VP0,teto:TETO_MAX,pin:"1234"};
+let tarefas=balancear(TRAW,VP0);
+let filhoAtivo="pedro", aba="tarefas", abaAdmin="auditoria", modoPai=false;
+let pinDigits=[], ignoreSem=false, ignoreCfg=false, ignoreTar=false;
+let confirmandoDesfazer=null;
+
+// ── Helpers data ──────────────────────────────────────────────────────────────
+function chaveSemana(){
+  const d=new Date(), dow=(d.getDay()+6)%7;
+  const m=new Date(d); m.setDate(d.getDate()-dow); m.setHours(0,0,0,0);
+  const ini=new Date(m.getFullYear(),0,1);
+  const wk=Math.ceil(((m-ini)/86400000+1)/7);
+  return `${m.getFullYear()}-W${String(wk).padStart(2,"0")}`;
+}
+function hoje(){ return new Date().toLocaleDateString("pt-BR"); }
+function diasSemana(){
+  const d=new Date(), dow=(d.getDay()+6)%7;
+  const seg=new Date(d); seg.setDate(d.getDate()-dow); seg.setHours(0,0,0,0);
+  const dom=new Date(seg); dom.setDate(seg.getDate()+6);
+  const fmt=dt=>dt.toLocaleDateString("pt-BR",{day:"2-digit",month:"2-digit"});
+  const dias=Array.from({length:7},(_,i)=>{
+    const dia=new Date(seg); dia.setDate(seg.getDate()+i);
+    return {label:DL[dia.getDay()],data:dia.toLocaleDateString("pt-BR"),dt:dia};
+  });
+  return {seg:fmt(seg),dom:fmt(dom),dias};
+}
+function diasParaDom(){ const d=new Date().getDay(); return d===0?0:7-d; }
+
+// ── Helpers pontos ────────────────────────────────────────────────────────────
+function ptsPorTarefa(n,vp){ return Math.max(1,Math.round(TETO_MAX/vp/DS/n)); }
+function balancear(lista,vp){ const p=ptsPorTarefa(lista.length,vp||cfg.valorPonto); return lista.map(t=>({...t,pontos:p})); }
+function calcPontos(fid){ const r=semana[fid]||{}; return tarefas.reduce((a,t)=>a+Object.values(r[t.id]||{}).filter(v=>v==="aprovado").length*t.pontos,0); }
+function calcPend(fid){ const r=semana[fid]||{}; return tarefas.reduce((a,t)=>a+Object.values(r[t.id]||{}).filter(v=>v==="pendente").length,0); }
+function calcMesada(pts){ return Math.min(pts*cfg.valorPonto,cfg.teto); }
+
+// ── Firebase sync ─────────────────────────────────────────────────────────────
+async function init(){
+  const chaveCerta=chaveSemana();
+  const sd=await fbGet("semana");
+  if(!sd||sd.chave!==chaveCerta){ const n={chave:chaveCerta,pedro:{},maria:{}}; await fbSet("semana",n); semana=n; }
+  else semana=sd;
+  const cd=await fbGet("config");
+  if(cd) cfg=cd; else await fbSet("config",cfg);
+  const td=await fbGet("tarefas");
+  if(td?.lista) tarefas=td.lista; else await fbSet("tarefas",{lista:tarefas});
+
+  document.getElementById("loading").classList.add("hidden");
+  document.getElementById("app").classList.remove("hidden");
+  render();
+
+  fbListen("semana",data=>{
+    if(ignoreSem){ignoreSem=false;return;}
+    const c=chaveSemana();
+    if(data.chave!==c){ const n={chave:c,pedro:{},maria:{}}; fbSet("semana",n); semana=n; }
+    else semana=data;
+    render();
+  });
+  fbListen("config",data=>{ if(ignoreCfg){ignoreCfg=false;return;} cfg=data; render(); });
+  fbListen("tarefas",data=>{ if(ignoreTar){ignoreTar=false;return;} if(data?.lista) tarefas=data.lista; render(); });
+}
+
+function salvarSemana(nova){ ignoreSem=true; semana=nova; fbSet("semana",nova); }
+function salvarConfig(parcial){ ignoreCfg=true; cfg={...cfg,...parcial}; fbSet("config",cfg); }
+function salvarTarefas(lista){ ignoreTar=true; tarefas=lista; fbSet("tarefas",{lista}); }
+
+// ── PIN ───────────────────────────────────────────────────────────────────────
+window.abrirPin=function(){ pinDigits=[]; atualizarDots(); document.getElementById("pinOverlay").classList.remove("hidden"); }
+window.fecharPin=function(){ document.getElementById("pinOverlay").classList.add("hidden"); }
+window.pinPress=function(d){
+  if(pinDigits.length>=4) return;
+  pinDigits.push(d); atualizarDots();
+  if(pinDigits.length===4){
+    if(pinDigits.join("")===cfg.pin){ fecharPin(); entrarAdmin(); }
+    else{
+      const dots=document.querySelectorAll(".dot");
+      dots.forEach(x=>{x.style.background="#EF4444";x.style.transform="scale(1.3)";});
+      setTimeout(()=>{ pinDigits=[]; atualizarDots(); dots.forEach(x=>{x.style.background="#374151";x.style.transform="scale(1)";}); },700);
+    }
+  }
+}
+window.pinDel=function(){ pinDigits.pop(); atualizarDots(); }
+function atualizarDots(){
+  document.querySelectorAll(".dot").forEach((d,i)=>{ d.style.background=pinDigits.length>i?"#6C63FF":"#374151"; });
+}
+
+// ── Navegação ─────────────────────────────────────────────────────────────────
+function entrarAdmin(){ modoPai=true; abaAdmin="auditoria"; render(); }
+window.sairAdmin=function(){ modoPai=false; aba="tarefas"; render(); }
+window.setAba=function(a){ aba=a; render(); }
+window.setAbaAdmin=function(a){ abaAdmin=a; render(); }
+
+// ── Ações filho ───────────────────────────────────────────────────────────────
+window.marcar=function(tid){
+  const fid=filhoAtivo, d=hoje();
+  if(calcMesada(calcPontos(fid))>=cfg.teto) return;
+  const reg={...semana[fid]};
+  if(reg[tid]?.[d]) return;
+  reg[tid]={...(reg[tid]||{}),[d]:"pendente"};
+  salvarSemana({...semana,[fid]:reg});
+  dispararConfetti();
+  render();
+}
+window.solicitarDesfazer=function(tid){
+  confirmandoDesfazer=tid; render();
+}
+window.cancelarDesfazer=function(){
+  confirmandoDesfazer=null; render();
+}
+window.confirmarDesfazer=function(tid){
+  const fid=filhoAtivo, d=hoje();
+  const reg={...semana[fid]};
+  if(reg[tid]?.[d]!=="pendente") return;
+  const dias={...reg[tid]}; delete dias[d];
+  reg[tid]=dias;
+  salvarSemana({...semana,[fid]:reg});
+  confirmandoDesfazer=null;
+  render();
+}
+window.setFilho=function(fid){ filhoAtivo=fid; confirmandoDesfazer=null; render(); }
+
+// ── Ações pai ─────────────────────────────────────────────────────────────────
+window.aprovar=function(fid,tid){
+  const d=hoje(), reg={...semana[fid],[tid]:{...(semana[fid]?.[tid]||{}),[d]:"aprovado"}};
+  salvarSemana({...semana,[fid]:reg}); render();
+}
+window.rejeitar=function(fid,tid){
+  const d=hoje(), reg={...semana[fid],[tid]:{...(semana[fid]?.[tid]||{}),[d]:"rejeitado"}};
+  salvarSemana({...semana,[fid]:reg}); render();
+}
+window.aprovarTodos=function(){
+  const d=hoje(), nova={...semana};
+  FILHOS.forEach(f=>{ const r={...nova[f.id]}; tarefas.forEach(t=>{ if(r[t.id]?.[d]==="pendente") r[t.id]={...r[t.id],[d]:"aprovado"}; }); nova[f.id]=r; });
+  salvarSemana(nova); render();
+}
+window.resetSemana=function(){
+  const n={chave:chaveSemana(),pedro:{},maria:{}}; salvarSemana(n); render();
+  document.getElementById("confirmReset")?.remove();
+}
+
+// ── Config ────────────────────────────────────────────────────────────────────
+window.salvarVP=function(v){
+  const vp=parseFloat(v)||0.5;
+  salvarConfig({valorPonto:vp});
+  const nova=balancear(tarefas,vp); salvarTarefas(nova);
+  render();
+}
+window.salvarTeto=function(v){ salvarConfig({teto:parseFloat(v)||15}); render(); }
+window.salvarPin=function(){
+  const np=document.getElementById("inputNovoPin")?.value||"";
+  if(np.length!==4||!/^\d+$/.test(np)) return alert("PIN deve ter 4 dígitos numéricos.");
+  salvarConfig({pin:np}); render();
+}
+window.adicionarTarefa=function(){
+  const emoji=document.getElementById("ntEmoji")?.value.trim()||"⭐";
+  const nome=document.getElementById("ntNome")?.value.trim();
+  if(!nome) return;
+  const cat=document.getElementById("ntCat")?.value||"casa";
+  const filhos=[...document.querySelectorAll(".ntFilho:checked")].map(x=>x.value);
+  if(!filhos.length) return alert("Selecione ao menos um filho.");
+  const nova=balancear([...tarefas,{id:Date.now(),emoji,nome,cat,filhos,pontos:1}]);
+  salvarTarefas(nova); render();
+}
+window.removerTarefa=function(tid){
+  const nova=balancear(tarefas.filter(t=>t.id!==tid)); salvarTarefas(nova); render();
+}
+window.toggleEditar=function(tid){
+  const panel=document.getElementById("edit-"+tid);
+  if(panel) panel.classList.toggle("hidden");
+}
+window.updTarefa=function(tid,field,val){
+  const nova=tarefas.map(t=>t.id===tid?{...t,[field]:val}:t);
+  salvarTarefas(nova); render();
+}
+window.updFilhoTarefa=function(tid,fid,checked){
+  const t=tarefas.find(x=>x.id===tid); if(!t) return;
+  let fl=[...(t.filhos||["pedro","maria"])];
+  if(checked && !fl.includes(fid)) fl.push(fid);
+  else if(!checked) fl=fl.filter(x=>x!==fid);
+  if(!fl.length) return;
+  const nova=tarefas.map(x=>x.id===tid?{...x,filhos:fl}:x);
+  salvarTarefas(nova); render();
+}
+
+// ── Confetti ──────────────────────────────────────────────────────────────────
+function dispararConfetti(){
+  const el=document.getElementById("confetti"); el.innerHTML=""; el.classList.remove("hidden");
+  const cols=["#6C63FF","#F472B6","#FBBF24","#10B981","#3B82F6"];
+  for(let i=0;i<22;i++){
+    const d=document.createElement("div");
+    d.style.cssText=`position:absolute;left:${5+Math.random()*90}%;top:${Math.random()*30}%;width:10px;height:10px;border-radius:${i%3===0?"50%":"2px"};background:${cols[i%5]};animation:cffall ${0.7+Math.random()*0.7}s ease-out forwards;animation-delay:${Math.random()*0.5}s;opacity:0;`;
+    el.appendChild(d);
+  }
+  setTimeout(()=>el.classList.add("hidden"),2000);
+}
+
+// ── Render ────────────────────────────────────────────────────────────────────
+function render(){
+  const {seg,dom,dias}=diasSemana();
+  const dr=diasParaDom();
+  const pp=calcPontos("pedro"), pm=calcPontos("maria");
+  const mp=calcMesada(pp), mm=calcMesada(pm);
+  const pendP=calcPend("pedro"), pendM=calcPend("maria");
+  const totalPend=pendP+pendM;
+  const f=FILHOS.find(x=>x.id===filhoAtivo);
+
+  // Header
+  const hdr=document.getElementById("header");
+  hdr.style.background=modoPai?"linear-gradient(135deg,#1E1B4B,#312E81)":"linear-gradient(135deg,#6C63FF,#F472B6)";
+  document.getElementById("headerLabel").textContent=modoPai?"🔐 Modo Pais":"🏆 Mesada Game";
+  document.getElementById("headerTitle").textContent=modoPai?"Painel de Auditoria":"Missões da Semana";
+  document.getElementById("headerDatas").textContent=`📅 ${seg} – ${dom}`;
+  document.getElementById("headerDias").textContent=dr===0?"último dia! 🎯":`${dr} dia${dr>1?"s":""} p/ domingo`;
+  document.getElementById("btnPais").classList.toggle("hidden",modoPai);
+  document.getElementById("btnSair").classList.toggle("hidden",!modoPai);
+  const bp=document.getElementById("badgePend");
+  if(totalPend>0){ bp.classList.remove("hidden"); bp.textContent=totalPend; } else bp.classList.add("hidden");
+
+  // Scoreboard
+  document.getElementById("scoreboard").innerHTML=FILHOS.map(fi=>{
+    const mes=fi.id==="pedro"?mp:mm, pend=fi.id==="pedro"?pendP:pendM;
+    const ativo=!modoPai&&filhoAtivo===fi.id, cheio=mes>=cfg.teto;
+    const pct=Math.min((mes/cfg.teto)*100,100);
+    return `<button onclick="setFilho('${fi.id}')" style="flex:1;background:${ativo?"rgba(255,255,255,0.25)":"rgba(255,255,255,0.1)"};border:${ativo?"2px solid rgba(255,255,255,0.6)":"2px solid transparent"};border-radius:16px;padding:10px 12px;color:#fff;cursor:${modoPai?"default":"pointer"};text-align:left;transition:all 0.2s;">
+      <div style="font-size:11px;opacity:0.8;">${fi.avatar} ${fi.nome}</div>
+      <div style="font-size:20px;font-weight:900;">R$${mes.toFixed(2)} ${cheio?"🏆":""}</div>
+      <div style="font-size:11px;opacity:0.7;">de R$${cfg.teto.toFixed(2)} ${pend>0?`<span style="margin-left:6px;background:#FBBF24;color:#78350F;border-radius:8px;padding:1px 6px;font-weight:900;">${pend}⏳</span>`:""}</div>
+      <div style="height:4px;background:rgba(255,255,255,0.2);border-radius:99px;margin-top:6px;overflow:hidden;"><div style="height:100%;width:${pct}%;background:${cheio?"#FBBF24":"rgba(255,255,255,0.8)"};border-radius:99px;"></div></div>
+    </button>`;
+  }).join("");
+
+  // Nav
+  document.getElementById("nav").classList.toggle("hidden",modoPai);
+  document.getElementById("navAdmin").classList.toggle("hidden",!modoPai);
+  ["tarefas","historico","placar"].forEach(a=>document.getElementById("tab-"+a).classList.toggle("ativo",aba===a));
+  ["auditoria","placar","config"].forEach(a=>document.getElementById("atab-"+a)?.classList.toggle("ativo",abaAdmin===a));
+  const ba=document.getElementById("badgeAud");
+  if(totalPend>0){ ba.classList.remove("hidden"); ba.textContent=totalPend; } else ba.classList.add("hidden");
+
+  // Panes
+  const panes=["tarefas","historico","placar","auditoria","aplacar","config"];
+  panes.forEach(p=>document.getElementById("pane-"+p).classList.add("hidden"));
+
+  if(!modoPai){
+    if(aba==="tarefas")   renderTarefas(f,mp,mm,pp,pm);
+    if(aba==="historico") renderHistorico(f,dias);
+    if(aba==="placar")    renderPlacar(pp,pm,mp,mm,seg,dom,dr);
+  } else {
+    if(abaAdmin==="auditoria") renderAuditoria(totalPend,pendP,pendM);
+    if(abaAdmin==="placar")    renderAdminPlacar(pp,pm,mp,mm,seg,dom,dr);
+    if(abaAdmin==="config")    renderConfig();
+  }
+}
+
+function badge(text,color){ return `<span style="background:${color}22;color:${color};border:1px solid ${color}44;border-radius:20px;padding:2px 9px;font-size:11px;font-weight:700;text-transform:uppercase;">${text}</span>`; }
+
+function barraHtml(valor,teto){
+  const pct=Math.min((valor/teto)*100,100), cheio=valor>=teto;
+  return `<div style="margin-top:8px;">
+    <div style="display:flex;justify-content:space-between;margin-bottom:4px;">
+      <span style="font-size:11px;font-weight:700;color:${cheio?"#FBBF24":"#fff"};opacity:0.9;">${cheio?"🏆 Teto atingido!":`R$${valor.toFixed(2)} de R$${teto.toFixed(2)}`}</span>
+      <span style="font-size:11px;opacity:0.7;color:#fff;">${Math.round(pct)}%</span>
+    </div>
+    <div style="height:8px;background:rgba(255,255,255,0.2);border-radius:99px;overflow:hidden;">
+      <div style="height:100%;width:${pct}%;background:${cheio?"#FBBF24":"rgba(255,255,255,0.85)"};border-radius:99px;transition:width 0.5s;"></div>
+    </div>
+  </div>`;
+}
+
+function renderTarefas(f,mp,mm,pp,pm){
+  const el=document.getElementById("pane-tarefas"); el.classList.remove("hidden");
+  const mes=filhoAtivo==="pedro"?mp:mm;
+  const pts=filhoAtivo==="pedro"?pp:pm;
+  const bloq=mes>=cfg.teto;
+  const tfiltradas=tarefas.filter(t=>(t.filhos||["pedro","maria"]).includes(filhoAtivo));
+
+  el.innerHTML=`
+    <div style="display:flex;gap:8px;margin-bottom:14px;">
+      ${FILHOS.map(fi=>`<button onclick="setFilho('${fi.id}')" style="flex:1;padding:10px;border-radius:14px;border:${filhoAtivo===fi.id?`2.5px solid ${fi.cor}`:"2.5px solid #E5E7EB"};background:${filhoAtivo===fi.id?fi.cor+"12":"#fff"};color:${filhoAtivo===fi.id?fi.cor:"#6B7280"};font-weight:800;font-size:14px;">${fi.avatar} ${fi.nome}</button>`).join("")}
+    </div>
+    <div style="background:${f.grad};border-radius:18px;padding:14px 16px;color:#fff;margin-bottom:14px;">
+      <div style="display:flex;justify-content:space-between;align-items:center;">
+        <div><div style="font-size:11px;opacity:0.8;">Mesada acumulada</div><div style="font-size:30px;font-weight:900;">R$${mes.toFixed(2)}</div></div>
+        <div style="text-align:right;"><div style="font-size:11px;opacity:0.8;">Pontos</div><div style="font-size:22px;font-weight:900;">${pts}</div></div>
+      </div>
+      ${barraHtml(mes,cfg.teto)}
+    </div>
+    ${bloq?`<div style="background:linear-gradient(135deg,#FBBF24,#F59E0B);border-radius:14px;padding:12px 16px;margin-bottom:14px;text-align:center;"><div style="font-weight:900;font-size:15px;color:#78350F;">🏆 Parabéns! Teto de R$${cfg.teto.toFixed(2)} atingido!</div><div style="font-size:12px;color:#92400E;margin-top:2px;">Sua mesada desta semana está garantida!</div></div>`:""}
+    <div style="font-size:11px;font-weight:700;color:#9CA3AF;letter-spacing:1px;text-transform:uppercase;margin-bottom:10px;">Tarefas de hoje — ${hoje()}</div>
+    <div style="display:flex;flex-direction:column;gap:10px;">
+      ${tfiltradas.map(t=>{
+        const d=hoje(), st=semana[filhoAtivo]?.[t.id]?.[d];
+        const desfazendo=confirmandoDesfazer===t.id;
+        const bgs={pendente:"#FEF9C3",aprovado:f.cor+"18",rejeitado:"#FEF2F2"};
+        const bds={pendente:"2px solid #FCD34D",aprovado:`2px solid ${f.cor}`,rejeitado:"2px solid #FCA5A5"};
+        const labels={pendente:"⏳ Aguardando revisão",aprovado:"✅ Aprovado! 🎉",rejeitado:"❌ Não aprovado"};
+        const lcores={pendente:"#D97706",aprovado:f.cor,rejeitado:"#EF4444"};
+        const desab=bloq&&!st;
+        return `<div style="background:${desab?"#F9FAFB":bgs[st]||"#fff"};border:${desab?"2px solid #E5E7EB":bds[st]||"2px solid #E5E7EB"};border-radius:16px;overflow:hidden;opacity:${desab?0.4:1};box-shadow:${st==="aprovado"?`0 4px 12px ${f.cor}25`:"0 1px 3px rgba(0,0,0,0.05)"};transition:all 0.18s;">
+          <div onclick="${(!st&&!desab)?`marcar(${t.id})`:"void 0"}" style="padding:14px 16px;cursor:${st||desab?"default":"pointer"};display:flex;align-items:center;gap:12px;">
+            <div style="width:44px;height:44px;border-radius:12px;background:${st==="aprovado"?f.cor:st==="rejeitado"?"#FEE2E2":st==="pendente"?"#FEF3C7":"#F3F4F6"};display:flex;align-items:center;justify-content:center;font-size:22px;flex-shrink:0;">${t.emoji}</div>
+            <div style="flex:1;min-width:0;">
+              <div style="font-weight:700;font-size:14px;color:${st==="aprovado"?f.cor:st==="rejeitado"?"#EF4444":"#1F2937"};margin-bottom:3px;">${t.nome}</div>
+              <div style="display:flex;gap:6px;align-items:center;flex-wrap:wrap;">${badge(CAT_NOM[t.cat],CAT_COR[t.cat])} <span style="font-size:12px;color:#9CA3AF;">+${t.pontos} pts</span></div>
+              ${st?`<div style="font-size:11px;margin-top:5px;font-weight:700;color:${lcores[st]};">${labels[st]}</div>`:""}
+              ${desab?`<div style="font-size:11px;margin-top:5px;font-weight:700;color:#9CA3AF;">🏆 Teto semanal atingido</div>`:""}
+            </div>
+            ${st==="pendente"&&!desfazendo?`<button onclick="solicitarDesfazer(${t.id})" style="flex-shrink:0;background:#FEF3C7;border:1.5px solid #FCD34D;border-radius:10px;padding:6px 10px;color:#92400E;font-size:11px;font-weight:800;">Desfazer</button>`:""}
+            ${!st&&!desab?`<div style="width:28px;height:28px;border-radius:50%;background:#E5E7EB;display:flex;align-items:center;justify-content:center;flex-shrink:0;color:#9CA3AF;font-size:18px;font-weight:700;">+</div>`:""}
+          </div>
+          ${desfazendo?`<div style="background:#FFFBEB;border-top:1.5px solid #FCD34D;padding:10px 16px;display:flex;align-items:center;gap:10px;">
+            <span style="flex:1;font-size:12px;color:#92400E;font-weight:700;">Desfazer marcação de hoje?</span>
+            <button onclick="cancelarDesfazer()" style="padding:6px 12px;border-radius:8px;border:1.5px solid #D1D5DB;background:#fff;color:#6B7280;font-size:12px;font-weight:700;">Não</button>
+            <button onclick="confirmarDesfazer(${t.id})" style="padding:6px 12px;border-radius:8px;border:none;background:#EF4444;color:#fff;font-size:12px;font-weight:800;">Sim</button>
+          </div>`:""}
+        </div>`;
+      }).join("")}
+    </div>`;
+}
+
+function renderHistorico(f,dias){
+  const el=document.getElementById("pane-historico"); el.classList.remove("hidden");
+  const hj=hoje();
+  const diasComAtiv=dias.filter(d=>d.data===hj||tarefas.some(t=>semana[filhoAtivo]?.[t.id]?.[d.data]));
+  let html=`<div style="display:flex;gap:8px;margin-bottom:16px;">
+    ${FILHOS.map(fi=>`<button onclick="setFilho('${fi.id}')" style="flex:1;padding:10px;border-radius:14px;border:${filhoAtivo===fi.id?`2.5px solid ${fi.cor}`:"2.5px solid #E5E7EB"};background:${filhoAtivo===fi.id?fi.cor+"12":"#fff"};color:${filhoAtivo===fi.id?fi.cor:"#6B7280"};font-weight:800;font-size:14px;">${fi.avatar} ${fi.nome}</button>`).join("")}
+  </div>`;
+  if(!diasComAtiv.length){ html+=`<div style="text-align:center;padding:30px 0;color:#9CA3AF;font-size:14px;">Nenhuma atividade esta semana ainda.</div>`; }
+  else {
+    html+=`<div style="display:flex;flex-direction:column;gap:12px;">`;
+    diasComAtiv.forEach(({label,data,dt})=>{
+      const isHoje=data===hj;
+      const tDia=tarefas.filter(t=>(t.filhos||["pedro","maria"]).includes(filhoAtivo)&&semana[filhoAtivo]?.[t.id]?.[data]);
+      const aprov=tDia.filter(t=>semana[filhoAtivo]?.[t.id]?.[data]==="aprovado").length;
+      const pend=tDia.filter(t=>semana[filhoAtivo]?.[t.id]?.[data]==="pendente").length;
+      const rej=tDia.filter(t=>semana[filhoAtivo]?.[t.id]?.[data]==="rejeitado").length;
+      html+=`<div style="background:${isHoje?f.cor+"10":"#fff"};border:${isHoje?`2px solid ${f.cor}44`:"2px solid #E5E7EB"};border-radius:16px;overflow:hidden;">
+        <div style="display:flex;align-items:center;gap:10px;padding:10px 14px;background:${isHoje?f.cor+"18":"#F9FAFB"};border-bottom:${tDia.length?"1px solid #E5E7EB":"none"};">
+          <div style="width:36px;height:36px;border-radius:10px;background:${isHoje?f.cor:"#E5E7EB"};display:flex;flex-direction:column;align-items:center;justify-content:center;flex-shrink:0;">
+            <span style="font-size:9px;font-weight:800;color:${isHoje?"#fff":"#9CA3AF"};text-transform:uppercase;line-height:1;">${label}</span>
+            <span style="font-size:14px;font-weight:900;color:${isHoje?"#fff":"#4B5563"};line-height:1.2;">${data.split("/")[0]}</span>
+          </div>
+          <div style="flex:1;">
+            <div style="font-weight:800;font-size:13px;color:${isHoje?f.cor:"#374151"};">${isHoje?"Hoje":label+", "+data}</div>
+            <div style="font-size:11px;color:#9CA3AF;">${tDia.length>0?`${aprov>0?`<span style="color:#10B981;font-weight:700;">✅ ${aprov} </span>`:""}${pend>0?`<span style="color:#D97706;font-weight:700;">⏳ ${pend} </span>`:""}${rej>0?`<span style="color:#EF4444;font-weight:700;">❌ ${rej} </span>`:""}`:(isHoje?"Marque o que fez hoje!":"Nenhuma tarefa marcada")}</div>
+          </div>
+        </div>
+        ${tDia.length>0?`<div style="padding:8px 14px;display:flex;flex-direction:column;gap:6px;">${tDia.map(t=>{
+          const st=semana[filhoAtivo]?.[t.id]?.[data];
+          const stCor={aprovado:"#10B981",pendente:"#D97706",rejeitado:"#EF4444"}[st];
+          const stIcon={aprovado:"✅",pendente:"⏳",rejeitado:"❌"}[st];
+          return `<div style="display:flex;align-items:center;gap:8px;"><span style="font-size:16px;">${t.emoji}</span><span style="flex:1;font-size:13px;color:#374151;font-weight:600;">${t.nome}</span><span style="font-size:11px;color:${stCor};font-weight:700;">${stIcon} +${t.pontos}pts</span></div>`;
+        }).join("")}</div>`:""}
+      </div>`;
+    });
+    html+=`</div>`;
+  }
+  el.innerHTML=html;
+}
+
+function placarCard(fi,pontos,mesada,rank){
+  const pct=Math.min((mesada/cfg.teto)*100,100), cheio=mesada>=cfg.teto;
+  return `<div style="background:${fi.grad};border-radius:24px;padding:20px 22px;color:#fff;position:relative;overflow:hidden;box-shadow:0 8px 24px ${fi.cor}44;">
+    <div style="position:absolute;top:-20px;right:-20px;font-size:80px;opacity:0.12;line-height:1;">${fi.avatar}</div>
+    <div style="display:flex;justify-content:space-between;align-items:flex-start;">
+      <div>
+        <div style="font-size:13px;opacity:0.85;font-weight:600;letter-spacing:1px;text-transform:uppercase;">${fi.avatar} ${fi.nome}</div>
+        <div style="font-size:11px;opacity:0.7;margin-bottom:8px;">${fi.idade} anos</div>
+        <div style="font-size:44px;font-weight:900;line-height:1;">${pontos}</div>
+        <div style="font-size:12px;opacity:0.8;margin-top:2px;">pontos aprovados</div>
+      </div>
+      <div style="text-align:right;">
+        <div style="background:rgba(255,255,255,0.2);border-radius:16px;padding:8px 14px;">
+          <div style="font-size:11px;opacity:0.8;">💰 Mesada</div>
+          <div style="font-size:24px;font-weight:900;">R$${mesada.toFixed(2)}</div>
+          <div style="font-size:10px;opacity:0.7;">teto R$${cfg.teto.toFixed(2)}</div>
+        </div>
+        ${rank===1&&pontos>0?`<div style="margin-top:6px;font-size:18px;">👑 Líder!</div>`:""}
+        ${cheio?`<div style="margin-top:4px;font-size:16px;">🏆 Teto!</div>`:""}
+      </div>
+    </div>
+    ${barraHtml(mesada,cfg.teto)}
+  </div>`;
+}
+
+function renderPlacar(pp,pm,mp,mm,seg,dom,dr){
+  const el=document.getElementById("pane-placar"); el.classList.remove("hidden");
+  const rp=pp>=pm?1:2, rm=pm>=pp?1:2;
+  el.innerHTML=`<div style="display:flex;flex-direction:column;gap:14px;">
+    ${placarCard(FILHOS[0],pp,mp,rp)}
+    ${placarCard(FILHOS[1],pm,mm,rm)}
+    <div style="background:#fff;border-radius:16px;padding:14px 16px;border:2px solid #E5E7EB;text-align:center;">
+      <div style="font-size:13px;color:#6B7280;font-weight:600;line-height:1.8;">
+        ⚡ ${tarefas[0]?.pontos||1} ponto por tarefa · 1 pt = R$${cfg.valorPonto.toFixed(2)}<br>
+        📅 ${seg} a ${dom} · ${dr===0?"⏰ Último dia!": `⏰ ${dr} dia${dr>1?"s":""} restantes`}
+      </div>
+    </div>
+  </div>`;
+}
+
+function renderAuditoria(totalPend,pendP,pendM){
+  const el=document.getElementById("pane-auditoria"); el.classList.remove("hidden");
+  const hj=hoje(); let html="";
+  if(totalPend>0) html+=`<button onclick="aprovarTodos()" style="width:100%;padding:13px;border-radius:14px;border:none;background:linear-gradient(135deg,#10B981,#059669);color:#fff;font-weight:800;font-size:14px;margin-bottom:16px;box-shadow:0 4px 14px rgba(16,185,129,0.3);">✅ Aprovar tudo de hoje (${totalPend} pendente${totalPend>1?"s":""})</button>`;
+  let alguem=false;
+  FILHOS.forEach(fi=>{
+    const itens=tarefas.filter(t=>(t.filhos||["pedro","maria"]).includes(fi.id)&&semana[fi.id]?.[t.id]?.[hj]);
+    if(!itens.length) return; alguem=true;
+    const pend=fi.id==="pedro"?pendP:pendM;
+    html+=`<div style="margin-bottom:22px;">
+      <div style="font-weight:800;font-size:14px;color:#C7D2FE;margin-bottom:10px;display:flex;align-items:center;gap:8px;">${fi.avatar} ${fi.nome} ${pend>0?`<span style="background:#EF4444;color:#fff;border-radius:8px;padding:1px 8px;font-size:11px;font-weight:900;">${pend} pend.</span>`:""}</div>
+      ${itens.map(t=>{
+        const st=semana[fi.id]?.[t.id]?.[hj];
+        const stCor={pendente:"#FCD34D",aprovado:fi.cor,rejeitado:"#FCA5A5"}[st];
+        const stLabel={pendente:"⏳ Pendente",aprovado:"✅ Aprovado",rejeitado:"❌ Rejeitado"}[st];
+        return `<div style="background:#fff;border:2px solid ${stCor};border-radius:16px;padding:14px 16px;margin-bottom:10px;">
+          <div style="display:flex;align-items:center;gap:10px;${st==="pendente"?"margin-bottom:12px":""}">
+            <span style="font-size:22px;">${t.emoji}</span>
+            <div style="flex:1;"><div style="font-weight:700;font-size:14px;color:#1F2937;">${t.nome}</div><div style="font-size:12px;color:#9CA3AF;">${fi.avatar} ${fi.nome} · ${t.pontos} pts</div></div>
+            <span style="font-size:12px;font-weight:800;color:${stCor};">${stLabel}</span>
+          </div>
+          ${st==="pendente"?`<div style="display:flex;gap:8px;">
+            <button onclick="rejeitar('${fi.id}',${t.id})" style="flex:1;padding:9px;border-radius:10px;border:2px solid #FCA5A5;background:#FEF2F2;color:#EF4444;font-weight:700;font-size:13px;">❌ Rejeitar</button>
+            <button onclick="aprovar('${fi.id}',${t.id})" style="flex:1;padding:9px;border-radius:10px;border:none;background:${fi.grad};color:#fff;font-weight:700;font-size:13px;">✅ Aprovar</button>
+          </div>`:""}
+        </div>`;
+      }).join("")}
+    </div>`;
+  });
+  if(!alguem) html+=`<div style="text-align:center;padding:50px 20px;"><div style="font-size:52px;margin-bottom:12px;">🌙</div><div style="color:#6B7280;font-size:15px;font-weight:600;">Nenhuma tarefa marcada hoje ainda.</div></div>`;
+  else if(totalPend===0) html+=`<div style="text-align:center;padding:30px 20px;"><div style="font-size:52px;margin-bottom:12px;">🎉</div><div style="color:#6B7280;font-size:15px;font-weight:600;">Tudo revisado hoje!</div></div>`;
+  el.innerHTML=html;
+}
+
+function renderAdminPlacar(pp,pm,mp,mm,seg,dom,dr){
+  const el=document.getElementById("pane-aplacar"); el.classList.remove("hidden");
+  const rp=pp>=pm?1:2, rm=pm>=pp?1:2;
+  let hist=""; let temAlgo=false;
+  tarefas.forEach(t=>{
+    const dp=Object.values(semana.pedro?.[t.id]||{}).filter(v=>v==="aprovado").length;
+    const dm=Object.values(semana.maria?.[t.id]||{}).filter(v=>v==="aprovado").length;
+    if(!dp&&!dm) return; temAlgo=true;
+    hist+=`<div style="display:flex;align-items:center;gap:10px;margin-bottom:10px;padding-bottom:10px;border-bottom:1px solid #312E81;">
+      <span style="font-size:18px;">${t.emoji}</span><span style="flex:1;font-size:13px;font-weight:600;color:#E0E7FF;">${t.nome}</span>
+      ${dp>0?`<span style="font-size:12px;color:#818CF8;font-weight:700;">🧒 ${dp}× (+${dp*t.pontos})</span>`:""}
+      ${dm>0?`<span style="font-size:12px;color:#F9A8D4;font-weight:700;">👧 ${dm}× (+${dm*t.pontos})</span>`:""}
+    </div>`;
+  });
+  el.innerHTML=`<div style="display:flex;flex-direction:column;gap:14px;margin-bottom:18px;">
+    ${placarCard(FILHOS[0],pp,mp,rp)} ${placarCard(FILHOS[1],pm,mm,rm)}
+  </div>
+  <div style="background:#1E1B4B;border-radius:16px;padding:14px 18px;border:1px solid #312E81;margin-bottom:14px;">
+    <div style="font-weight:800;font-size:13px;color:#C7D2FE;margin-bottom:6px;">📅 Semana atual</div>
+    <div style="color:#9CA3AF;font-size:13px;line-height:1.8;">${seg} (seg) → ${dom} (dom)<br>${dr===0?"⏰ Hoje é o último dia — lembrar de pagar!":`⏰ Faltam ${dr} dia${dr>1?"s":""}`}<br>🔄 Reinício automático toda segunda-feira</div>
+  </div>
+  <div style="background:#1E1B4B;border-radius:20px;padding:20px;border:1px solid #312E81;margin-bottom:16px;">
+    <div style="font-weight:800;font-size:15px;color:#C7D2FE;margin-bottom:14px;">📋 Histórico da semana</div>
+    ${temAlgo?hist:`<div style="color:#6B7280;font-size:13px;text-align:center;padding:10px;">Sem pontos aprovados ainda.</div>`}
+  </div>
+  <button onclick="document.getElementById('confirmReset').classList.toggle('hidden')" style="width:100%;padding:13px;border-radius:14px;border:2px dashed #374151;background:transparent;color:#6B7280;font-weight:700;font-size:13px;">🔄 Reiniciar semana manualmente</button>
+  <div id="confirmReset" class="hidden" style="background:#7F1D1D;border-radius:16px;padding:16px;text-align:center;margin-top:10px;">
+    <div style="font-weight:700;color:#FCA5A5;margin-bottom:12px;">Zerar tudo e começar nova semana?</div>
+    <div style="display:flex;gap:10px;">
+      <button onclick="document.getElementById('confirmReset').classList.add('hidden')" style="flex:1;padding:10px;border-radius:12px;border:2px solid #374151;background:transparent;color:#D1D5DB;font-weight:700;">Cancelar</button>
+      <button onclick="resetSemana()" style="flex:1;padding:10px;border-radius:12px;border:none;background:#EF4444;color:#fff;font-weight:700;">✅ Reiniciar</button>
+    </div>
+  </div>`;
+}
+
+function renderConfig(){
+  const el=document.getElementById("pane-config"); el.classList.remove("hidden");
+  const pts=tarefas[0]?.pontos||1;
+  const maxT=(pts*tarefas.length*DS*cfg.valorPonto).toFixed(2);
+  const ok=parseFloat(maxT)<=TETO_MAX;
+  el.innerHTML=`
+  <div style="background:linear-gradient(135deg,#1E1B4B,#312E81);border-radius:16px;padding:14px 18px;margin-bottom:14px;border:1px solid #4338CA;">
+    <div style="font-weight:800;font-size:13px;color:#C7D2FE;margin-bottom:4px;">⚖️ Rebalanceamento automático</div>
+    <div style="font-size:12px;color:#9CA3AF;line-height:1.7;">${tarefas.length} tarefa${tarefas.length!==1?"s":""} · ${pts} ponto${pts!==1?"s":""} cada<br>Máximo teórico (7 dias, tudo feito): R$${maxT}<br><span style="color:${ok?"#10B981":"#EF4444"};font-weight:700;">${ok?"✅ Dentro do limite de R$15,00":"⚠️ Acima de R$15,00"}</span></div>
+  </div>
+  <div style="background:#1E1B4B;border-radius:20px;padding:20px;border:1px solid #312E81;margin-bottom:14px;">
+    <div style="font-weight:800;font-size:15px;color:#C7D2FE;margin-bottom:12px;">💰 Valor por ponto</div>
+    <div style="display:flex;align-items:center;gap:10px;">
+      <span style="color:#9CA3AF;">R$</span>
+      <input type="number" min="0.10" max="10" step="0.10" value="${cfg.valorPonto}" onchange="salvarVP(this.value)" style="flex:1;padding:10px 14px;border-radius:12px;border:2px solid #312E81;font-size:18px;font-weight:800;color:#818CF8;outline:none;background:#0F172A;"/>
+      <span style="color:#9CA3AF;font-size:13px;">/ ponto</span>
+    </div>
+  </div>
+  <div style="background:#1E1B4B;border-radius:20px;padding:20px;border:1px solid #312E81;margin-bottom:14px;">
+    <div style="font-weight:800;font-size:15px;color:#C7D2FE;margin-bottom:12px;">🏆 Teto semanal por filho</div>
+    <div style="display:flex;align-items:center;gap:10px;">
+      <span style="color:#9CA3AF;">R$</span>
+      <input type="number" min="1" max="100" step="0.50" value="${cfg.teto}" onchange="salvarTeto(this.value)" style="flex:1;padding:10px 14px;border-radius:12px;border:2px solid #312E81;font-size:18px;font-weight:800;color:#FBBF24;outline:none;background:#0F172A;"/>
+    </div>
+  </div>
+  <div style="background:#1E1B4B;border-radius:20px;padding:20px;border:1px solid #312E81;margin-bottom:14px;">
+    <div style="font-weight:800;font-size:15px;color:#C7D2FE;margin-bottom:12px;">🔐 PIN de acesso</div>
+    <div style="display:flex;gap:8px;">
+      <input id="inputNovoPin" type="password" maxlength="4" placeholder="Novo PIN (4 dígitos)" style="flex:1;padding:10px 14px;border-radius:12px;border:2px solid #312E81;font-size:18px;font-weight:800;text-align:center;letter-spacing:8px;color:#818CF8;outline:none;background:#0F172A;"/>
+      <button onclick="salvarPin()" style="padding:10px 16px;border-radius:12px;border:none;background:#6C63FF;color:#fff;font-weight:700;font-size:14px;">Salvar</button>
+    </div>
+    <div style="font-size:12px;color:#6B7280;margin-top:6px;">PIN atual: ${cfg.pin.replace(/./g,"•")}</div>
+  </div>
+  <div style="background:#1E1B4B;border-radius:20px;padding:20px;border:1px solid #312E81;margin-bottom:14px;">
+    <div style="font-weight:800;font-size:15px;color:#C7D2FE;margin-bottom:12px;">➕ Nova tarefa</div>
+    <div style="display:flex;gap:8px;margin-bottom:10px;">
+      <input id="ntEmoji" maxlength="2" value="⭐" style="width:46px;padding:9px;border-radius:12px;border:2px solid #312E81;font-size:20px;text-align:center;outline:none;background:#0F172A;color:#fff;"/>
+      <input id="ntNome" placeholder="Nome da tarefa" style="flex:1;padding:9px 12px;border-radius:12px;border:2px solid #312E81;font-size:14px;outline:none;background:#0F172A;color:#fff;"/>
+    </div>
+    <div style="margin-bottom:10px;">
+      <div style="font-size:11px;color:#6B7280;margin-bottom:4px;">Categoria</div>
+      <select id="ntCat" style="width:100%;padding:9px;border-radius:12px;border:2px solid #312E81;font-size:13px;outline:none;background:#0F172A;color:#fff;">
+        <option value="casa">🏠 Casa</option><option value="quarto">🛏️ Quarto</option><option value="estudo">📚 Estudo</option>
+      </select>
+    </div>
+    <div style="margin-bottom:14px;">
+      <div style="font-size:11px;color:#6B7280;margin-bottom:6px;">Quem vai fazer?</div>
+      <div style="display:flex;gap:8px;">
+        ${FILHOS.map(fi=>`<label style="flex:1;padding:10px 8px;border-radius:12px;border:2px solid ${fi.cor};background:${fi.cor}22;color:${fi.cor};font-weight:800;font-size:13px;text-align:center;cursor:pointer;"><input type="checkbox" class="ntFilho" value="${fi.id}" checked style="display:none;"> ${fi.avatar} ${fi.nome}</label>`).join("")}
+      </div>
+    </div>
+    <button onclick="adicionarTarefa()" style="width:100%;padding:12px;border-radius:14px;border:none;background:linear-gradient(135deg,#6C63FF,#818CF8);color:#fff;font-weight:800;font-size:14px;">✨ Adicionar e rebalancear</button>
+  </div>
+  <div style="background:#1E1B4B;border-radius:20px;padding:20px;border:1px solid #312E81;">
+    <div style="font-weight:800;font-size:15px;color:#C7D2FE;margin-bottom:12px;">📋 Tarefas ativas</div>
+    <div style="display:flex;flex-direction:column;gap:10px;">
+      ${tarefas.map(t=>`
+      <div style="background:#0F172A;border-radius:14px;overflow:hidden;border:1px solid #1E293B;">
+        <div style="display:flex;align-items:center;gap:10px;padding:12px 14px;">
+          <span style="font-size:18px;">${t.emoji}</span>
+          <div style="flex:1;min-width:0;">
+            <div style="font-size:13px;font-weight:700;color:#E0E7FF;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${t.nome}</div>
+            <div style="font-size:11px;color:#6B7280;margin-top:3px;">${t.pontos}pts · ${CAT_NOM[t.cat]} · ${FILHOS.map(fi=>`<span style="opacity:${(t.filhos||["pedro","maria"]).includes(fi.id)?1:0.2}">${fi.avatar}</span>`).join("")}</div>
+          </div>
+          <button onclick="toggleEditar(${t.id})" style="background:#1E293B;border:none;border-radius:8px;padding:5px 10px;color:#9CA3AF;font-size:12px;font-weight:700;">✏️</button>
+          <button onclick="removerTarefa(${t.id})" style="background:#7F1D1D;border:none;border-radius:8px;padding:5px 9px;color:#FCA5A5;font-size:13px;">✕</button>
+        </div>
+        <div id="edit-${t.id}" class="hidden" style="padding:4px 14px 16px;border-top:1px solid #1E293B;">
+          <div style="font-size:11px;color:#6B7280;margin:10px 0 6px;">Emoji e nome</div>
+          <div style="display:flex;gap:8px;margin-bottom:10px;">
+            <input value="${t.emoji}" maxlength="2" onchange="updTarefa(${t.id},'emoji',this.value)" style="width:46px;padding:8px;border-radius:10px;border:2px solid #312E81;font-size:20px;text-align:center;outline:none;background:#1E1B4B;color:#fff;"/>
+            <input value="${t.nome}" onchange="updTarefa(${t.id},'nome',this.value)" style="flex:1;padding:8px 12px;border-radius:10px;border:2px solid #312E81;font-size:13px;outline:none;background:#1E1B4B;color:#fff;"/>
+          </div>
+          <div style="margin-bottom:10px;">
+            <div style="font-size:11px;color:#6B7280;margin-bottom:4px;">Categoria</div>
+            <select onchange="updTarefa(${t.id},'cat',this.value)" style="width:100%;padding:8px;border-radius:10px;border:2px solid #312E81;font-size:13px;outline:none;background:#1E1B4B;color:#fff;">
+              <option value="casa" ${t.cat==="casa"?"selected":""}>🏠 Casa</option>
+              <option value="quarto" ${t.cat==="quarto"?"selected":""}>🛏️ Quarto</option>
+              <option value="estudo" ${t.cat==="estudo"?"selected":""}>📚 Estudo</option>
+            </select>
+          </div>
+          <div style="font-size:11px;color:#6B7280;margin-bottom:6px;">Quem faz?</div>
+          <div style="display:flex;gap:8px;">
+            ${FILHOS.map(fi=>{ const sel=(t.filhos||["pedro","maria"]).includes(fi.id);
+              return `<label style="flex:1;padding:10px 8px;border-radius:12px;border:2px solid ${sel?fi.cor:"#312E81"};background:${sel?fi.cor+"22":"transparent"};color:${sel?fi.cor:"#6B7280"};font-weight:800;font-size:13px;text-align:center;cursor:pointer;">
+                <input type="checkbox" ${sel?"checked":""} onchange="updFilhoTarefa(${t.id},'${fi.id}',this.checked)" style="display:none;"> ${fi.avatar} ${fi.nome}
+              </label>`;
+            }).join("")}
+          </div>
+        </div>
+      </div>`).join("")}
+    </div>
+  </div>`;
+}
+
+init();
+</script>
+</body>
+</html>
