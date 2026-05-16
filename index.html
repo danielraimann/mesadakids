@@ -348,28 +348,53 @@ window.adicionarTarefa=function(){
 window.removerTarefa=function(tid){
   const nova=balancear(tarefas.filter(t=>t.id!==tid)); salvarTarefas(nova); render();
 }
-window.toggleEditar=function(tid){
-  const panel=document.getElementById("edit-"+tid);
-  if(panel) panel.classList.toggle("hidden");
-}
-window.updTarefa=function(tid,field,val){
-  const nova=tarefas.map(t=>t.id===tid?{...t,[field]:val}:t);
-  salvarTarefas(nova); render();
-}
-window.updFilhoTarefa=function(tid,fid,checked){
+
+// Rascunho local de edição — não salva até clicar em Salvar
+let rascunho={};
+
+window.abrirEditar=function(tid){
   const t=tarefas.find(x=>x.id===tid); if(!t) return;
-  let fl=[...(t.filhos||["pedro","maria"])];
+  rascunho[tid]={...t, filhos:[...(t.filhos||["pedro","maria"])], dias:t.dias?[...t.dias]:null};
+  const panel=document.getElementById("edit-"+tid);
+  if(panel) panel.classList.remove("hidden");
+}
+window.fecharEditar=function(tid){
+  delete rascunho[tid];
+  const panel=document.getElementById("edit-"+tid);
+  if(panel) panel.classList.add("hidden");
+}
+window.salvarEdicao=function(tid){
+  const r=rascunho[tid]; if(!r) return;
+  const nova=balancear(tarefas.map(x=>x.id===tid?{...r}:x));
+  salvarTarefas(nova);
+  delete rascunho[tid];
+  render();
+}
+
+// Atualiza apenas o rascunho — sem render(), sem fechar o painel
+window.rascEmoji=function(tid,val){ if(rascunho[tid]) rascunho[tid].emoji=val; }
+window.rascNome=function(tid,val){ if(rascunho[tid]) rascunho[tid].nome=val; }
+window.rascCat=function(tid,val){ if(rascunho[tid]) rascunho[tid].cat=val; }
+window.rascFilho=function(tid,fid,checked){
+  if(!rascunho[tid]) return;
+  let fl=[...rascunho[tid].filhos];
   if(checked && !fl.includes(fid)) fl.push(fid);
   else if(!checked) fl=fl.filter(x=>x!==fid);
-  if(!fl.length) return;
-  const nova=tarefas.map(x=>x.id===tid?{...x,filhos:fl}:x);
-  salvarTarefas(nova); render();
+  if(fl.length>0) rascunho[tid].filhos=fl;
 }
-window.updDiasTarefa=function(tid){
-  const checks=[...document.querySelectorAll(`.diasEdit-${tid}:checked`)].map(x=>parseInt(x.value));
-  const dias=checks.length===7||checks.length===0?null:checks;
-  const nova=tarefas.map(x=>x.id===tid?{...x,dias}:x);
-  salvarTarefas(nova); render();
+window.rascDia=function(tid,i,checked){
+  if(!rascunho[tid]) return;
+  let dias=rascunho[tid].dias?[...rascunho[tid].dias]:[0,1,2,3,4,5,6];
+  if(checked && !dias.includes(i)) dias.push(i);
+  else if(!checked) dias=dias.filter(x=>x!==i);
+  rascunho[tid].dias=dias.length===7?null:dias;
+  // Atualiza visual do botão sem fechar
+  const lbl=document.getElementById(`diaEdit-${tid}-${i}`);
+  if(lbl){
+    lbl.style.border=`2px solid ${checked?"#6C63FF":"#312E81"}`;
+    lbl.style.background=checked?"#6C63FF22":"transparent";
+    lbl.style.color=checked?"#818CF8":"#6B7280";
+  }
 }
 window.toggleNtDia=function(i){
   const lbl=document.getElementById(`ntDiaLbl${i}`);
@@ -736,38 +761,53 @@ function renderConfig(){
             <div style="font-size:13px;font-weight:700;color:#E0E7FF;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${t.nome}</div>
             <div style="font-size:11px;color:#6B7280;margin-top:3px;">${t.pontos}pts · ${CAT_NOM[t.cat]} · ${FILHOS.map(fi=>`<span style="opacity:${(t.filhos||["pedro","maria"]).includes(fi.id)?1:0.2}">${fi.avatar}</span>`).join("")} · <span style="color:${t.dias&&t.dias.length<7?"#FBBF24":"#6B7280"}">${t.dias&&t.dias.length>0?t.dias.map(d=>DIAS_SEMANA_LABELS[d]).join(","):"Todos os dias"}</span></div>
           </div>
-          <button onclick="toggleEditar(${t.id})" style="background:#1E293B;border:none;border-radius:8px;padding:5px 10px;color:#9CA3AF;font-size:12px;font-weight:700;">✏️</button>
+          <button onclick="abrirEditar(${t.id})" style="background:#1E293B;border:none;border-radius:8px;padding:5px 10px;color:#9CA3AF;font-size:12px;font-weight:700;">✏️</button>
           <button onclick="removerTarefa(${t.id})" style="background:#7F1D1D;border:none;border-radius:8px;padding:5px 9px;color:#FCA5A5;font-size:13px;">✕</button>
         </div>
         <div id="edit-${t.id}" class="hidden" style="padding:4px 14px 16px;border-top:1px solid #1E293B;">
           <div style="font-size:11px;color:#6B7280;margin:10px 0 6px;">Emoji e nome</div>
           <div style="display:flex;gap:8px;margin-bottom:10px;">
-            <input value="${t.emoji}" maxlength="2" onchange="updTarefa(${t.id},'emoji',this.value)" style="width:46px;padding:8px;border-radius:10px;border:2px solid #312E81;font-size:20px;text-align:center;outline:none;background:#1E1B4B;color:#fff;"/>
-            <input value="${t.nome}" onchange="updTarefa(${t.id},'nome',this.value)" style="flex:1;padding:8px 12px;border-radius:10px;border:2px solid #312E81;font-size:13px;outline:none;background:#1E1B4B;color:#fff;"/>
+            <input value="${t.emoji}" maxlength="2" oninput="rascEmoji(${t.id},this.value)" style="width:46px;padding:8px;border-radius:10px;border:2px solid #312E81;font-size:20px;text-align:center;outline:none;background:#1E1B4B;color:#fff;"/>
+            <input value="${t.nome}" oninput="rascNome(${t.id},this.value)" style="flex:1;padding:8px 12px;border-radius:10px;border:2px solid #312E81;font-size:13px;outline:none;background:#1E1B4B;color:#fff;"/>
           </div>
           <div style="margin-bottom:10px;">
             <div style="font-size:11px;color:#6B7280;margin-bottom:4px;">Categoria</div>
-            <select onchange="updTarefa(${t.id},'cat',this.value)" style="width:100%;padding:8px;border-radius:10px;border:2px solid #312E81;font-size:13px;outline:none;background:#1E1B4B;color:#fff;">
+            <select onchange="rascCat(${t.id},this.value)" style="width:100%;padding:8px;border-radius:10px;border:2px solid #312E81;font-size:13px;outline:none;background:#1E1B4B;color:#fff;">
               <option value="casa" ${t.cat==="casa"?"selected":""}>🏠 Casa</option>
               <option value="quarto" ${t.cat==="quarto"?"selected":""}>🛏️ Quarto</option>
               <option value="estudo" ${t.cat==="estudo"?"selected":""}>📚 Estudo</option>
             </select>
           </div>
           <div style="font-size:11px;color:#6B7280;margin-bottom:6px;">Quem faz?</div>
-          <div style="display:flex;gap:8px;">
+          <div style="display:flex;gap:8px;margin-bottom:12px;">
             ${FILHOS.map(fi=>{ const sel=(t.filhos||["pedro","maria"]).includes(fi.id);
-              return `<label style="flex:1;padding:10px 8px;border-radius:12px;border:2px solid ${sel?fi.cor:"#312E81"};background:${sel?fi.cor+"22":"transparent"};color:${sel?fi.cor:"#6B7280"};font-weight:800;font-size:13px;text-align:center;cursor:pointer;">
-                <input type="checkbox" ${sel?"checked":""} onchange="updFilhoTarefa(${t.id},'${fi.id}',this.checked)" style="display:none;"> ${fi.avatar} ${fi.nome}
+              return `<label id="filhoEdit-${t.id}-${fi.id}" style="flex:1;padding:10px 8px;border-radius:12px;border:2px solid ${sel?fi.cor:"#312E81"};background:${sel?fi.cor+"22":"transparent"};color:${sel?fi.cor:"#6B7280"};font-weight:800;font-size:13px;text-align:center;cursor:pointer;" onclick="
+                var inp=this.querySelector('input');
+                inp.checked=!inp.checked;
+                rascFilho(${t.id},'${fi.id}',inp.checked);
+                this.style.border='2px solid '+(inp.checked?'${fi.cor}':'#312E81');
+                this.style.background=inp.checked?'${fi.cor}22':'transparent';
+                this.style.color=inp.checked?'${fi.cor}':'#6B7280';
+              ">
+                <input type="checkbox" ${sel?"checked":""} style="display:none;"> ${fi.avatar} ${fi.nome}
               </label>`;
             }).join("")}
           </div>
-          <div style="font-size:11px;color:#6B7280;margin:10px 0 6px;">Dias da semana <span style="font-weight:400;opacity:0.6;">(todos = diária)</span></div>
-          <div style="display:flex;gap:5px;flex-wrap:wrap;">
+          <div style="font-size:11px;color:#6B7280;margin-bottom:6px;">Dias da semana <span style="font-weight:400;opacity:0.6;">(todos = diária)</span></div>
+          <div style="display:flex;gap:5px;flex-wrap:wrap;margin-bottom:16px;">
             ${DIAS_SEMANA_LABELS.map((dl,i)=>{ const ativo=!t.dias||t.dias.includes(i);
-              return `<label style="padding:7px 10px;border-radius:10px;border:2px solid ${ativo?"#6C63FF":"#312E81"};background:${ativo?"#6C63FF22":"transparent"};color:${ativo?"#818CF8":"#6B7280"};font-weight:800;font-size:12px;cursor:pointer;" onclick="this.querySelector('input').checked=!this.querySelector('input').checked;updDiasTarefa(${t.id})">
-                <input type="checkbox" class="diasEdit-${t.id}" value="${i}" ${ativo?"checked":""} style="display:none;"> ${dl}
+              return `<label id="diaEdit-${t.id}-${i}" style="padding:7px 10px;border-radius:10px;border:2px solid ${ativo?"#6C63FF":"#312E81"};background:${ativo?"#6C63FF22":"transparent"};color:${ativo?"#818CF8":"#6B7280"};font-weight:800;font-size:12px;cursor:pointer;" onclick="
+                var inp=this.querySelector('input');
+                inp.checked=!inp.checked;
+                rascDia(${t.id},${i},inp.checked);
+              ">
+                <input type="checkbox" value="${i}" ${ativo?"checked":""} style="display:none;"> ${dl}
               </label>`;
             }).join("")}
+          </div>
+          <div style="display:flex;gap:8px;">
+            <button onclick="fecharEditar(${t.id})" style="flex:1;padding:10px;border-radius:12px;border:2px solid #374151;background:transparent;color:#9CA3AF;font-weight:700;font-size:13px;">Cancelar</button>
+            <button onclick="salvarEdicao(${t.id})" style="flex:2;padding:10px;border-radius:12px;border:none;background:linear-gradient(135deg,#6C63FF,#818CF8);color:#fff;font-weight:800;font-size:13px;">✅ Salvar alterações</button>
           </div>
         </div>
       </div>`).join("")}
