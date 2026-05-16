@@ -158,16 +158,16 @@ const CAT_COR={casa:"#10B981",quarto:"#6C63FF",estudo:"#F59E0B"};
 const CAT_NOM={casa:"Casa",quarto:"Quarto",estudo:"Estudo"};
 const DL=["Dom","Seg","Ter","Qua","Qui","Sex","Sáb"];
 const TRAW=[
-  {id:1, emoji:"🍽️",nome:"Lavou a louça",              cat:"casa",   filhos:["pedro","maria"]},
-  {id:2, emoji:"🧹",nome:"Varreu a casa",               cat:"casa",   filhos:["pedro","maria"]},
-  {id:3, emoji:"🛏️",nome:"Arrumou o quarto",            cat:"quarto", filhos:["pedro","maria"]},
-  {id:4, emoji:"👕",nome:"Dobrou roupas",               cat:"casa",   filhos:["pedro","maria"]},
-  {id:5, emoji:"📚",nome:"Leu um livro e resumiu",      cat:"estudo", filhos:["pedro","maria"]},
-  {id:6, emoji:"🎒",nome:"Organizou a mochila",         cat:"quarto", filhos:["pedro","maria"]},
-  {id:7, emoji:"🐶",nome:"Cuidou do pet",               cat:"casa",   filhos:["pedro","maria"]},
-  {id:8, emoji:"🧺",nome:"Separou o lixo reciclável",   cat:"casa",   filhos:["pedro","maria"]},
-  {id:9, emoji:"✏️",nome:"Fez a lição sem pedir ajuda", cat:"estudo", filhos:["pedro","maria"]},
-  {id:10,emoji:"🌿",nome:"Regou as plantas",            cat:"casa",   filhos:["pedro","maria"]},
+  {id:1, emoji:"🍽️",nome:"Lavou a louça",              cat:"casa",   filhos:["pedro","maria"], dias:null},
+  {id:2, emoji:"🧹",nome:"Varreu a casa",               cat:"casa",   filhos:["pedro","maria"], dias:null},
+  {id:3, emoji:"🛏️",nome:"Arrumou o quarto",            cat:"quarto", filhos:["pedro","maria"], dias:null},
+  {id:4, emoji:"👕",nome:"Dobrou roupas",               cat:"casa",   filhos:["pedro","maria"], dias:null},
+  {id:5, emoji:"📚",nome:"Leu um livro e resumiu",      cat:"estudo", filhos:["pedro","maria"], dias:null},
+  {id:6, emoji:"🎒",nome:"Organizou a mochila",         cat:"quarto", filhos:["pedro","maria"], dias:null},
+  {id:7, emoji:"🐶",nome:"Cuidou do pet",               cat:"casa",   filhos:["pedro","maria"], dias:null},
+  {id:8, emoji:"🧺",nome:"Separou o lixo reciclável",   cat:"casa",   filhos:["pedro","maria"], dias:null},
+  {id:9, emoji:"✏️",nome:"Fez a lição sem pedir ajuda", cat:"estudo", filhos:["pedro","maria"], dias:null},
+  {id:10,emoji:"🌿",nome:"Regou as plantas",            cat:"casa",   filhos:["pedro","maria"], dias:null},
 ];
 
 // ── Estado global ─────────────────────────────────────────────────────────────
@@ -187,6 +187,15 @@ function chaveSemana(){
   return `${m.getFullYear()}-W${String(wk).padStart(2,"0")}`;
 }
 function hoje(){ return new Date().toLocaleDateString("pt-BR"); }
+// Retorna o índice do dia da semana ISO: 0=Seg … 6=Dom
+function diaSemanaHoje(){ return (new Date().getDay()+6)%7; }
+// Verifica se tarefa deve aparecer hoje (dias:null = todos os dias)
+function tarefaAtivaHoje(t){
+  if(!t.dias||t.dias.length===0) return true;
+  return t.dias.includes(diaSemanaHoje());
+}
+// Labels curtos para os dias (índice ISO: 0=Seg…6=Dom)
+const DIAS_SEMANA_LABELS=["Seg","Ter","Qua","Qui","Sex","Sáb","Dom"];
 function diasSemana(){
   const d=new Date(), dow=(d.getDay()+6)%7;
   const seg=new Date(d); seg.setDate(d.getDate()-dow); seg.setHours(0,0,0,0);
@@ -331,7 +340,9 @@ window.adicionarTarefa=function(){
   const cat=document.getElementById("ntCat")?.value||"casa";
   const filhos=[...document.querySelectorAll(".ntFilho:checked")].map(x=>x.value);
   if(!filhos.length) return alert("Selecione ao menos um filho.");
-  const nova=balancear([...tarefas,{id:Date.now(),emoji,nome,cat,filhos,pontos:1}]);
+  const diasSel=[...document.querySelectorAll(".ntDia:checked")].map(x=>parseInt(x.value));
+  const dias=diasSel.length===7||diasSel.length===0?null:diasSel;
+  const nova=balancear([...tarefas,{id:Date.now(),emoji,nome,cat,filhos,dias,pontos:1}]);
   salvarTarefas(nova); render();
 }
 window.removerTarefa=function(tid){
@@ -353,6 +364,21 @@ window.updFilhoTarefa=function(tid,fid,checked){
   if(!fl.length) return;
   const nova=tarefas.map(x=>x.id===tid?{...x,filhos:fl}:x);
   salvarTarefas(nova); render();
+}
+window.updDiasTarefa=function(tid){
+  const checks=[...document.querySelectorAll(`.diasEdit-${tid}:checked`)].map(x=>parseInt(x.value));
+  const dias=checks.length===7||checks.length===0?null:checks;
+  const nova=tarefas.map(x=>x.id===tid?{...x,dias}:x);
+  salvarTarefas(nova); render();
+}
+window.toggleNtDia=function(i){
+  const lbl=document.getElementById(`ntDiaLbl${i}`);
+  const inp=lbl?.querySelector('input');
+  if(!inp) return;
+  inp.checked=!inp.checked;
+  lbl.style.border=`2px solid ${inp.checked?"#6C63FF":"#374151"}`;
+  lbl.style.background=inp.checked?"#6C63FF22":"transparent";
+  lbl.style.color=inp.checked?"#818CF8":"#6B7280";
 }
 
 // ── Confetti ──────────────────────────────────────────────────────────────────
@@ -445,7 +471,7 @@ function renderTarefas(f,mp,mm,pp,pm){
   const mes=filhoAtivo==="pedro"?mp:mm;
   const pts=filhoAtivo==="pedro"?pp:pm;
   const bloq=mes>=cfg.teto;
-  const tfiltradas=tarefas.filter(t=>(t.filhos||["pedro","maria"]).includes(filhoAtivo));
+  const tfiltradas=tarefas.filter(t=>(t.filhos||["pedro","maria"]).includes(filhoAtivo) && tarefaAtivaHoje(t));
 
   el.innerHTML=`
     <div style="display:flex;gap:8px;margin-bottom:14px;">
@@ -474,7 +500,7 @@ function renderTarefas(f,mp,mm,pp,pm){
             <div style="width:44px;height:44px;border-radius:12px;background:${st==="aprovado"?f.cor:st==="rejeitado"?"#FEE2E2":st==="pendente"?"#FEF3C7":"#F3F4F6"};display:flex;align-items:center;justify-content:center;font-size:22px;flex-shrink:0;">${t.emoji}</div>
             <div style="flex:1;min-width:0;">
               <div style="font-weight:700;font-size:14px;color:${st==="aprovado"?f.cor:st==="rejeitado"?"#EF4444":"#1F2937"};margin-bottom:3px;">${t.nome}</div>
-              <div style="display:flex;gap:6px;align-items:center;flex-wrap:wrap;">${badge(CAT_NOM[t.cat],CAT_COR[t.cat])} <span style="font-size:12px;color:#9CA3AF;">+${t.pontos} pts</span></div>
+              <div style="display:flex;gap:6px;align-items:center;flex-wrap:wrap;">${badge(CAT_NOM[t.cat],CAT_COR[t.cat])} <span style="font-size:12px;color:#9CA3AF;">+${t.pontos} pts</span>${t.dias&&t.dias.length>0?`<span style="font-size:11px;color:#FBBF24;font-weight:700;">📅 ${t.dias.map(d=>DIAS_SEMANA_LABELS[d]).join("·")}</span>`:""}</div>
               ${st?`<div style="font-size:11px;margin-top:5px;font-weight:700;color:${lcores[st]};">${labels[st]}</div>`:""}
               ${desab?`<div style="font-size:11px;margin-top:5px;font-weight:700;color:#9CA3AF;">🏆 Teto semanal atingido</div>`:""}
             </div>
@@ -691,6 +717,12 @@ function renderConfig(){
         ${FILHOS.map(fi=>`<label style="flex:1;padding:10px 8px;border-radius:12px;border:2px solid ${fi.cor};background:${fi.cor}22;color:${fi.cor};font-weight:800;font-size:13px;text-align:center;cursor:pointer;"><input type="checkbox" class="ntFilho" value="${fi.id}" checked style="display:none;"> ${fi.avatar} ${fi.nome}</label>`).join("")}
       </div>
     </div>
+    <div style="margin-bottom:14px;">
+      <div style="font-size:11px;color:#6B7280;margin-bottom:6px;">Dias da semana <span style="font-weight:400;opacity:0.6;">(todos = diária)</span></div>
+      <div style="display:flex;gap:5px;flex-wrap:wrap;">
+        ${DIAS_SEMANA_LABELS.map((d,i)=>`<label id="ntDiaLbl${i}" style="padding:7px 10px;border-radius:10px;border:2px solid #6C63FF;background:#6C63FF22;color:#818CF8;font-weight:800;font-size:12px;cursor:pointer;" onclick="toggleNtDia(${i})"><input type="checkbox" class="ntDia" value="${i}" checked style="display:none;"> ${d}</label>`).join("")}
+      </div>
+    </div>
     <button onclick="adicionarTarefa()" style="width:100%;padding:12px;border-radius:14px;border:none;background:linear-gradient(135deg,#6C63FF,#818CF8);color:#fff;font-weight:800;font-size:14px;">✨ Adicionar e rebalancear</button>
   </div>
   <div style="background:#1E1B4B;border-radius:20px;padding:20px;border:1px solid #312E81;">
@@ -702,7 +734,7 @@ function renderConfig(){
           <span style="font-size:18px;">${t.emoji}</span>
           <div style="flex:1;min-width:0;">
             <div style="font-size:13px;font-weight:700;color:#E0E7FF;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${t.nome}</div>
-            <div style="font-size:11px;color:#6B7280;margin-top:3px;">${t.pontos}pts · ${CAT_NOM[t.cat]} · ${FILHOS.map(fi=>`<span style="opacity:${(t.filhos||["pedro","maria"]).includes(fi.id)?1:0.2}">${fi.avatar}</span>`).join("")}</div>
+            <div style="font-size:11px;color:#6B7280;margin-top:3px;">${t.pontos}pts · ${CAT_NOM[t.cat]} · ${FILHOS.map(fi=>`<span style="opacity:${(t.filhos||["pedro","maria"]).includes(fi.id)?1:0.2}">${fi.avatar}</span>`).join("")} · <span style="color:${t.dias&&t.dias.length<7?"#FBBF24":"#6B7280"}">${t.dias&&t.dias.length>0?t.dias.map(d=>DIAS_SEMANA_LABELS[d]).join(","):"Todos os dias"}</span></div>
           </div>
           <button onclick="toggleEditar(${t.id})" style="background:#1E293B;border:none;border-radius:8px;padding:5px 10px;color:#9CA3AF;font-size:12px;font-weight:700;">✏️</button>
           <button onclick="removerTarefa(${t.id})" style="background:#7F1D1D;border:none;border-radius:8px;padding:5px 9px;color:#FCA5A5;font-size:13px;">✕</button>
@@ -726,6 +758,14 @@ function renderConfig(){
             ${FILHOS.map(fi=>{ const sel=(t.filhos||["pedro","maria"]).includes(fi.id);
               return `<label style="flex:1;padding:10px 8px;border-radius:12px;border:2px solid ${sel?fi.cor:"#312E81"};background:${sel?fi.cor+"22":"transparent"};color:${sel?fi.cor:"#6B7280"};font-weight:800;font-size:13px;text-align:center;cursor:pointer;">
                 <input type="checkbox" ${sel?"checked":""} onchange="updFilhoTarefa(${t.id},'${fi.id}',this.checked)" style="display:none;"> ${fi.avatar} ${fi.nome}
+              </label>`;
+            }).join("")}
+          </div>
+          <div style="font-size:11px;color:#6B7280;margin:10px 0 6px;">Dias da semana <span style="font-weight:400;opacity:0.6;">(todos = diária)</span></div>
+          <div style="display:flex;gap:5px;flex-wrap:wrap;">
+            ${DIAS_SEMANA_LABELS.map((dl,i)=>{ const ativo=!t.dias||t.dias.includes(i);
+              return `<label style="padding:7px 10px;border-radius:10px;border:2px solid ${ativo?"#6C63FF":"#312E81"};background:${ativo?"#6C63FF22":"transparent"};color:${ativo?"#818CF8":"#6B7280"};font-weight:800;font-size:12px;cursor:pointer;" onclick="this.querySelector('input').checked=!this.querySelector('input').checked;updDiasTarefa(${t.id})">
+                <input type="checkbox" class="diasEdit-${t.id}" value="${i}" ${ativo?"checked":""} style="display:none;"> ${dl}
               </label>`;
             }).join("")}
           </div>
